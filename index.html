@@ -465,6 +465,51 @@ function loop(ts){
 
   render();
   if(turn%2===0){updateNPCList();updatePlayerStats();}
+  // === Export game state to dashboard (every 2 turns) ===
+  if(turn%2===0){
+    try {
+      function tileZone(x,y){
+        if(x<0||x>=W||y<0||y>=H) return 'unknown';
+        var t = grid[y][x];
+        if(t==='F') return 'dark_forest';
+        if(t==='G') return 'elf_woods';
+        if(t==='M') return 'mine';
+        if(t==='H') return 'tavern';
+        if(t==='T') return 'tower';
+        if(t==='S') return 'shop';
+        if(t==='O') return 'ruins';
+        return 'village';
+      }
+      var ed = {
+        timestamp: new Date().toISOString(),
+        turn: turn, gameTime: Math.floor(gameTime),
+        player: {
+          name: 'Adventurer',
+          class: player.hasFireball ? 'Mage' : (player.weapon>=2 ? 'Warrior' : 'Hunter'),
+          level: player.level,
+          hp: player.hp, maxHp: player.maxHp,
+          mp: player.mp, maxMp: player.maxMp,
+          atk: player.atk, def: player.def,
+          gold: player.gold, exp: player.exp,
+          weapon: ['None','Iron Sword','Steel Sword','Mithril Blade'][player.weapon]||'None',
+          zone: tileZone(player.x, player.y),
+          alive: player.alive, x: player.x, y: player.y,
+        },
+        npcs: npcs.map(function(n){ return {
+          name: n.name, title: n.title,
+          zone: tileZone(n.x, n.y), state: n.state, x: n.x, y: n.y,
+        };}),
+        monsters: monsters.filter(function(m){return m.hp>0;}).map(function(m){ return {
+          type: m.typeName, emoji: m.emoji,
+          hp: m.hp, maxHp: m.maxHp, atk: m.atk, def: m.def,
+          zone: tileZone(m.x, m.y), x: m.x, y: m.y,
+        };}),
+        recentEvents: events.slice(-5),
+      };
+      localStorage.setItem('arcane_village_state', JSON.stringify(ed));
+    } catch(e) {}
+  }
+
 }
 
 // ═══════════════════════════════════════════════════
